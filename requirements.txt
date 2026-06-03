@@ -1,17 +1,17 @@
 # --- UI & Visualization ---
-streamlit==1.32.0
-matplotlib==3.8.3
+streamlit
+matplotlib
 
 # --- Core Math & Logic ---
-numpy==1.26.4
+numpy
 
 # --- Testing ---
-pytest==8.0.2
+pytest
 
 # --- Machine Learning (Training) ---
-torch==2.2.1
-tensorboard==2.16.2
+torch
+tensorboard
 
 # --- Machine Learning (Cloud Inference) ---
-onnx==1.15.0
-onnxruntime==1.17.1
+onnx
+onnxruntime
