@@ -1,0 +1,37 @@
+# Python core
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Machine Learning / Jupyter
+*.ipynb_checkpoints
+.pytest_cache/
+
+# 🛑 CRITICAL: Ignore Heavy GPU Checkpoints 
+models/checkpoints/*.pth
+models/checkpoints/*.pt
+models/checkpoints/*.ckpt
+logs/
+runs/
+tensorboard/
+
+# Allow the lightweight ONNX production model
+!models/production/*.onnx
+
+# IDEs
+.vscode/
+.idea/
+*.swp
