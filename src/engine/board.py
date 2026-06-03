@@ -46,16 +46,7 @@ class HexBoard:
                 
         return neighbors
 
-    def display_terminal(self):
-        """A quick and dirty printer just to test our logic in the console."""
-        symbols = {Player.EMPTY: ".", Player.RED: "R", Player.BLUE: "B"}
-        for r in range(self.size):
-            # Add spaces to visually skew the printed matrix into a rhombus
-            indent = " " * r
-            row_str = " ".join([symbols[Player(val)] for val in self.grid[r]])
-            print(f"{indent}{row_str}")
-    
-def check_win(self, player):
+    def check_win(self, player):
         """Uses Depth-First Search (DFS) to check if a player has connected their edges."""
         # 1. Define the starting edges and the target edges
         if player == Player.RED:
@@ -91,3 +82,12 @@ def check_win(self, player):
                     
         # If the stack empties and we never hit the target edge, no win yet
         return False
+
+    def display_terminal(self):
+        """A quick and dirty printer just to test our logic in the console."""
+        symbols = {Player.EMPTY: ".", Player.RED: "R", Player.BLUE: "B"}
+        for r in range(self.size):
+            # Add spaces to visually skew the printed matrix into a rhombus
+            indent = " " * r
+            row_str = " ".join([symbols[Player(val)] for val in self.grid[r]])
+            print(f"{indent}{row_str}")
