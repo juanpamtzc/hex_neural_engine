@@ -11,10 +11,20 @@ class Player(IntEnum):
     BLUE = -1
 
 class HexBoard:
-    def __init__(self, size=5):
+    def __init__(self, size=11):
         self.size = size
-        # Initialize a matrix of zeros (Empty)
         self.grid = np.full((size, size), Player.EMPTY, dtype=int)
+        
+        # --- UNION-FIND INITIALIZATION ---
+        # We need size*size nodes for the board, plus 4 virtual nodes for the edges.
+        total_nodes = (size * size) + 4
+        self.parent = np.arange(total_nodes, dtype=int)
+        
+        # Define virtual edge indices (sitting at the end of the 1D array)
+        self.RED_TOP = size * size
+        self.RED_BOT = size * size + 1
+        self.BLUE_LFT = size * size + 2
+        self.BLUE_RGT = size * size + 3
         
     def is_valid_move(self, row, col):
         """Checks if a coordinate is on the board and currently empty."""
@@ -23,11 +33,31 @@ class HexBoard:
         return False
 
     def place_piece(self, row, col, player):
-        """Places a piece and returns True if successful, False otherwise."""
-        if self.is_valid_move(row, col):
-            self.grid[row, col] = player
-            return True
-        raise ValueError(f"Invalid move at ({row}, {col}).")
+        """Places a piece and updates connected components using union-find."""
+        if not self.is_valid_move(row,col):
+            raise ValueError(f"Invalid move at ({row}, {col})")
+        
+        self.grid[row, col] = player
+
+        idx = row * self.size + col
+
+        if player == Player.RED:
+            if row==0: 
+                self._union(idx, self.RED_TOP)
+            if row==self.size - 1:
+                self._union(idx, self.RED_BOT)
+        elif player == Player.BLUE:
+            if col==0:
+                self._union(idx, self.BLUE_LFT)
+            if col==self.size-1:
+                self._union(idx, self.BLUE_RGT)
+        
+        for nr, nc in self.get_neighbors(row,col):
+            if self.grid[nr, nc]==player:
+                n_idx = nr * self.size + nc
+                self._union(idx, n_idx)
+        
+        return True
 
     def get_neighbors(self, row, col):
         """Returns a list of valid (on-board) neighboring coordinates."""
@@ -45,42 +75,29 @@ class HexBoard:
                 neighbors.append((r, c))
                 
         return neighbors
+    
+    # UNION-FIND ALGORITHM FUNCTIONS
+    # Since depth-first search would be too expensive, switching to union-find algorithm
+    def _find(self, i):
+        """Finds the root of node i with path compression for O(1) amortized time."""
+        if self.parent[i] == i:
+            return i
+        self.parent[i] = self._find(self.parent[i])
+        return self.parent[i]
+    # UNION-FIND ALGORITHM FUNCTIONS
+    def _union(self, i, j):
+        """Connects two nodes/components."""
+        root_i = self._find(i)
+        root_j = self._find(j)
+        if root_i != root_j:
+            self.parent[root_i] = root_j
 
     def check_win(self, player):
-        """Uses Depth-First Search (DFS) to check if a player has connected their edges."""
-        # 1. Define the starting edges and the target edges
+        """O(1) amortized win check using Union-Find."""
         if player == Player.RED:
-            # Red starts at the Top (row 0) and wants to reach the Bottom
-            start_nodes = [(0, c) for c in range(self.size) if self.grid[0, c] == player]
-            def is_target(r, c): return r == self.size - 1
-            
+            return self._find(self.RED_TOP) == self._find(self.RED_BOT)
         elif player == Player.BLUE:
-            # Blue starts at the Left (col 0) and wants to reach the Right
-            start_nodes = [(r, 0) for r in range(self.size) if self.grid[r, 0] == player]
-            def is_target(r, c): return c == self.size - 1
-            
-        else:
-            return False
-
-        # 2. Run the Depth-First Search
-        visited = set(start_nodes)
-        stack = list(start_nodes)
-
-        while stack:
-            r, c = stack.pop()
-            
-            # If our current hex touches the target edge, it's a guaranteed win!
-            if is_target(r, c):
-                return True
-                
-            # Check all valid, on-board neighbors
-            for nr, nc in self.get_neighbors(r, c):
-                # If the neighbor belongs to the same player and hasn't been checked yet
-                if (nr, nc) not in visited and self.grid[nr, nc] == player:
-                    visited.add((nr, nc))
-                    stack.append((nr, nc))
-                    
-        # If the stack empties and we never hit the target edge, no win yet
+            return self._find(self.BLUE_LFT) == self._find(self.BLUE_RGT)
         return False
 
     def display_terminal(self):
