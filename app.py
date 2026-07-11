@@ -2,152 +2,86 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 import numpy as np
-import random
 
-# Import your core engine structures
+# Import your game engine
 from src.engine.board import HexBoard, Player
 
-# --- 1. PAGE SETUP & THEME ---
-st.set_page_config(
-    page_title="Hex-Zero Arena",
-    page_icon="⬢",
-    layout="wide"
-)
+# 1. Page Setup
+st.set_page_config(page_title="Hex-Zero Arena", layout="centered")
+st.title("⬡ Hex-Zero: Interactive Arena")
+st.markdown("Red connects **Top-Left to Bottom-Right**. Blue connects **Top-Right to Bottom-Left**.")
 
-st.title("⬢ Hex-Zero: Reinforcement Learning Arena")
-st.markdown("### Production Front-End Framework")
-
-# --- 2. CONFIGURABLE STATE MANAGEMENT ---
-# Initialize persistent game state variables
-if 'board_size' not in st.session_state:
-    st.session_state.board_size = 5  # Matches your default board.py size
-
+# 2. Session State Initialization
 if 'board' not in st.session_state:
-    st.session_state.board = HexBoard(size=st.session_state.board_size)
-
-if 'current_player' not in st.session_state:
+    st.session_state.board = HexBoard(size=5)
     st.session_state.current_player = Player.RED
-
-if 'winner' not in st.session_state:
     st.session_state.winner = None
 
-if 'game_mode' not in st.session_state:
-    st.session_state.game_mode = "Human vs. Machine"
-
-# Map player structural identities based on the selected game mode
-if st.session_state.game_mode == "Human vs. Human (Local)":
-    st.session_state.p1_type = "Human"
-    st.session_state.p2_type = "Human"
-elif st.session_state.game_mode == "Human vs. Machine":
-    st.session_state.p1_type = "Human"
-    st.session_state.p2_type = "AI"
-else:  # Machine vs. Machine
-    st.session_state.p1_type = "AI"
-    st.session_state.p2_type = "AI"
-
-
-# --- 3. PREMIUM VISUALIZATION ENGINE ---
-def draw_board_premium(board_obj):
-    """Renders a clean, high-contrast Hex board highlighting the perimeter targets."""
-    # Use a clean dark background format for maximum contrast
-    fig, ax = plt.subplots(figsize=(6, 6), facecolor='#0e1117')
-    ax.set_facecolor('#0e1117')
+# 3. Matplotlib Rendering Function (Refactored for Physical Layout)
+def draw_board(board_obj):
+    fig, ax = plt.subplots(figsize=(8, 8))
     ax.set_aspect('equal')
-    radius = 0.577 
+    radius = 0.5
     
     color_map = {
-        Player.EMPTY: '#1e2430',  # Slate dark for empty cells
-        Player.RED: '#ff4b4b',    # Clean Red
-        Player.BLUE: '#1f77b4'    # Clean Blue
+        Player.EMPTY: '#f0f2f6', # Light gray for empty to look like a physical board
+        Player.RED: '#ff4b4b',
+        Player.BLUE: '#1f77b4'
     }
     
-    size = board_obj.size
-    
-    for row in range(size):
-        for col in range(size):
-            # Skew math for transforming matrix indices to isometric hex coordinate space
-            x = col + (row * 0.5)
-            y = -row * (np.sqrt(3) / 2)  # Negative keeps row 0 at the top physically
+    for row in range(board_obj.size):
+        for col in range(board_obj.size):
+            # Classic Diamond Projection (Flat-topped hexes)
+            # Columns project down-right, Rows project down-left
+            x = (col - row) * 1.5 * radius
+            y = -(col + row) * (np.sqrt(3) / 2 * radius)
             
             player_at_pos = board_obj.grid[row, col]
             
-            # Highlight border perimeters so win trajectories make visual sense
-            edge_color = '#465362'
-            edge_width = 1.2
-            
-            # Red targets Top and Bottom edges
-            if row == 0 or row == size - 1:
-                edge_color = '#ff4b4b'
-                edge_width = 2.5
-            # Blue targets Left and Right edges
-            if col == 0 or col == size - 1:
-                if not (row == 0 or row == size - 1): # Don't overwrite corners entirely
-                    edge_color = '#1f77b4'
-                    edge_width = 2.5
-
+            # orientation=0 forces flat-topped hexes, required for this diagonal interlocking
             hexagon = RegularPolygon(
-                (x, y), 
-                numVertices=6, 
-                radius=radius, 
-                orientation=np.radians(30),
-                facecolor=color_map[player_at_pos], 
-                edgecolor=edge_color,
-                linewidth=edge_width
+                (x, y),
+                numVertices=6,
+                radius=radius * 0.95, # Slight gap between tiles for visual pop
+                orientation=0, 
+                facecolor=color_map[player_at_pos],
+                edgecolor='black',
+                linewidth=1.0
             )
             ax.add_patch(hexagon)
             
-            # Dynamic coordinate text color based on cell occupancy
-            text_color = '#ffffff' if player_at_pos != Player.EMPTY else '#808495'
-            ax.text(x, y, f"{row},{col}", ha='center', va='center', fontsize=9, color=text_color, weight='bold')
+            # Coordinate labels
+            text_color = 'white' if player_at_pos != Player.EMPTY else 'gray'
+            ax.text(x, y, f"{row},{col}", ha='center', va='center', fontsize=8, color=text_color, fontweight='bold')
 
     ax.autoscale_view()
     ax.axis('off')
     return fig
 
-
-# --- 4. SIDEBAR CONTROL PANEL ---
+# 4. Game UI & Logic
 with st.sidebar:
-    st.header("🎮 Match Setup")
-    
-    # Game Profile Select Box
-    selected_mode = st.selectbox(
-        "Game Mode",
-        ["Human vs. Human (Local)", "Human vs. Machine", "Machine vs. Machine"],
-        index=["Human vs. Human (Local)", "Human vs. Machine", "Machine vs. Machine"].index(st.session_state.game_mode)
-    )
-    
-    # Reset match gracefully if game mode is changed mid-session
-    if selected_mode != st.session_state.game_mode:
-        st.session_state.game_mode = selected_mode
-        st.session_state.board = HexBoard(size=st.session_state.board_size)
-        st.session_state.current_player = Player.RED
-        st.session_state.winner = None
-        st.rerun()
-
-    st.markdown("---")
-    st.subheader("📊 Live Status")
+    st.header("Make a Move")
     
     if st.session_state.winner:
-        winner_color = "🔴 RED" if st.session_state.winner == Player.RED else "🔵 BLUE"
-        st.success(f"🏆 {winner_color} WINS!")
+        st.success(f"🏆 {st.session_state.winner.name} WINS!")
+        if st.button("Play Again"):
+            st.session_state.board = HexBoard(size=st.session_state.board.size)
+            st.session_state.winner = None
+            st.session_state.current_player = Player.RED
+            st.rerun()
     else:
-        active_type = st.session_state.p1_type if st.session_state.current_player == Player.RED else st.session_state.p2_type
-        player_label = "🔴 RED" if st.session_state.current_player == Player.RED else "🔵 BLUE"
-        st.info(f"Turn: **{player_label}** ({active_type})")
-
-    # Manual Coordinate Inputs for Human Players
-    current_turn_type = st.session_state.p1_type if st.session_state.current_player == Player.RED else st.session_state.p2_type
-    if not st.session_state.winner and current_turn_type == "Human":
-        st.markdown("### Manual Play Input")
+        player_color = "🔴 RED" if st.session_state.current_player == Player.RED else "🔵 BLUE"
+        st.markdown(f"**Current Turn:** {player_color}")
+        
         col1, col2 = st.columns(2)
         with col1:
-            row_in = st.number_input("Row", min_value=0, max_value=st.session_state.board_size-1, value=0, step=1)
+            row_input = st.number_input("Row", min_value=0, max_value=st.session_state.board.size-1, value=0)
         with col2:
-            col_in = st.number_input("Col", min_value=0, max_value=st.session_state.board_size-1, value=0, step=1)
+            col_input = st.number_input("Column", min_value=0, max_value=st.session_state.board.size-1, value=0)
             
-        if st.button("Place Piece", use_container_width=True, type="primary"):
-            if st.session_state.board.is_valid_move(row_in, col_in):
-                st.session_state.board.place_piece(row_in, col_in, st.session_state.current_player)
+        if st.button("Place Piece"):
+            if st.session_state.board.is_valid_move(row_input, col_input):
+                st.session_state.board.place_piece(row_input, col_input, st.session_state.current_player)
                 
                 if st.session_state.board.check_win(st.session_state.current_player):
                     st.session_state.winner = st.session_state.current_player
@@ -155,59 +89,7 @@ with st.sidebar:
                     st.session_state.current_player = Player.BLUE if st.session_state.current_player == Player.RED else Player.RED
                 st.rerun()
             else:
-                st.error("Invalid move! Cell already occupied.")
+                st.error("Invalid move! That hex is already taken.")
 
-    st.markdown("---")
-    if st.button("Reset Game board", use_container_width=True):
-        st.session_state.board = HexBoard(size=st.session_state.board_size)
-        st.session_state.current_player = Player.RED
-        st.session_state.winner = None
-        st.rerun()
-
-
-# --- 5. MAIN GRAPHICS AND AUTOMATED GAME LOOP ---
-layout_board, layout_telemetry = st.columns([2, 1])
-
-with layout_board:
-    # Display our sleek premium board
-    st.pyplot(draw_board_premium(st.session_state.board))
-
-with layout_telemetry:
-    st.subheader("🤖 Engine Output Log")
-    
-    # If it is an AI's turn, compute the automated next move
-    if not st.session_state.winner and current_turn_type == "AI":
-        with st.status("Engine computing optimal play matrix...", expanded=True) as status:
-            st.write("Extracting valid action coordinates...")
-            
-            # Find all open cells
-            valid_moves = []
-            for r in range(st.session_state.board_size):
-                for c in range(st.session_state.board_size):
-                    if st.session_state.board.is_valid_move(r, c):
-                        valid_moves.append((r, c))
-            
-            # Select a random move for now as our agent stub
-            if valid_moves:
-                ai_row, ai_col = random.choice(valid_moves)
-                st.write(f"Executing placeholder evaluation play at: ({ai_row}, {ai_col})")
-                st.session_state.board.place_piece(ai_row, ai_col, st.session_state.current_player)
-            
-            status.update(label="Move committed!", state="complete")
-            
-        # Post-move evaluation check
-        if st.session_state.board.check_win(st.session_state.current_player):
-            st.session_state.winner = st.session_state.current_player
-        else:
-            st.session_state.current_player = Player.BLUE if st.session_state.current_player == Player.RED else Player.RED
-        
-        # Short pause for Machine vs. Machine simulation observation, then rerun
-        import time
-        if st.session_state.game_mode == "Machine vs. Machine":
-            time.sleep(0.4)
-        st.rerun()
-    else:
-        if st.session_state.winner:
-            st.success("Match complete.")
-        else:
-            st.info("System idling. Awaiting action from human player.")
+# 5. Draw the current state to the screen
+st.pyplot(draw_board(st.session_state.board))
