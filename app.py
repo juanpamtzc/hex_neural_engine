@@ -13,7 +13,7 @@ st.markdown("Red connects **Top-Right to Bottom-Left**. Blue connects **Top-Left
 
 # 2. Session State Initialization
 if 'board' not in st.session_state:
-    st.session_state.board = HexBoard(size=5)
+    st.session_state.board = HexBoard(size=11)
     st.session_state.current_player = Player.RED
     st.session_state.winner = None
 
