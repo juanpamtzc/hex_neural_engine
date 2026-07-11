@@ -52,7 +52,7 @@ def draw_board(board_obj):
             ax.add_patch(hexagon)
             
             text_color = 'white' if player_at_pos != Player.EMPTY else '#888888'
-            ax.text(x, y, f"{row},{col}", ha='center', va='center', fontsize=9, color=text_color, fontweight='bold')
+            ax.text(x, y, f"{row},{col}", ha='center', va='center', fontsize=6, color=text_color, fontweight='bold')
 
     ax.autoscale_view()
     ax.axis('off')
