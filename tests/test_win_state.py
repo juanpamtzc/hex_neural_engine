@@ -51,3 +51,35 @@ def test_block_prevents_win():
     board.place_piece(1, 1, Player.BLUE)
     
     assert not board.check_win(Player.RED), "Red should not win through a block."
+
+def test_custom_streamlit_topology_valid():
+    """
+    Tests that custom UI-aligned topology allows diagonal connections 
+    like (1,1) -> (2,2).
+    """
+    board = HexBoard(size=4)
+    
+    # Red plays a diagonal path directly matching the (1, 1) delta
+    board.place_piece(0, 0, Player.RED)
+    board.place_piece(1, 1, Player.RED)
+    board.place_piece(2, 2, Player.RED)
+    
+    assert not board.check_win(Player.RED), "Red should not win yet."
+    
+    board.place_piece(3, 3, Player.RED)
+    assert board.check_win(Player.RED), "Red failed to win using the custom (1, 1) UI topology."
+
+def test_old_hex_topology_invalid():
+    """
+    Tests that the standard Hex diagonals (1, -1) and (-1, 1) are strictly 
+    rejected by the engine, preventing ghost-connections in the UI.
+    """
+    board = HexBoard(size=3)
+    
+    # Red attempts to connect using the old standard hex diagonal (1, -1)
+    board.place_piece(0, 1, Player.RED)
+    board.place_piece(1, 0, Player.RED) 
+    
+    board.place_piece(2, 0, Player.RED) 
+    # If (1,0) and (0,1) were connected, Red would have a path from Row 0 to Row 2.
+    assert not board.check_win(Player.RED), "Engine falsely connected the old (1, -1) diagonal!"
