@@ -113,7 +113,11 @@ def draw_board(board_obj):
 
 # 4. Game UI & Logic
 with st.sidebar:
-    st.header("Make a Move")
+    st.header("Game Settings")
+
+    game_mode = st.radio("Select Mode:", ("Human vs Human", "Human vs AI", "AI vs AI"))
+    st.divider()
+    st.header("Match Status")
     
     if st.session_state.winner:
         st.success(f"🏆 {st.session_state.winner.name} WINS!")
@@ -126,23 +130,43 @@ with st.sidebar:
         player_color = "🔴 RED" if st.session_state.current_player == Player.RED else "🔵 BLUE"
         st.markdown(f"**Current Turn:** {player_color}")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            row_input = st.number_input("Row", min_value=0, max_value=st.session_state.board.size-1, value=0)
-        with col2:
-            col_input = st.number_input("Column", min_value=0, max_value=st.session_state.board.size-1, value=0)
-            
-        if st.button("Place Piece"):
-            if st.session_state.board.is_valid_move(row_input, col_input):
-                st.session_state.board.place_piece(row_input, col_input, st.session_state.current_player)
+        # determine if it's AI's turn
+        is_ai_turn = False
+        if game_mode == "AI vs AI":
+            is_ai_turn = True
+        elif game_mode == "Human vs AI" and st.session_state.current_player == Player.BLUE:
+            is_ai_turn = True
+
+        # for now, I'm having the AI have it's own button.
+        if is_ai_turn:
+            if st.button("Generate AI Move", type="primary"):
+                row, col = get_ai_move(st.session_state.board, st.session_state.current_player, ai_session)
+                if row is not None and col is not None:
+                    st.session_state.board.place_piece(row, col, st.session_state.current_player)
+                    
+                    if st.session_state.board.check_win(st.session_state.current_player):
+                        st.session_state.winner = st.session_state.current_player
+                    else:
+                        st.session_state.current_player = Player.BLUE if st.session_state.current_player == Player.RED else Player.RED
+                    st.rerun()
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                row_input = st.number_input("Row", min_value=0, max_value=st.session_state.board.size-1, value=0)
+            with col2:
+                col_input = st.number_input("Column", min_value=0, max_value=st.session_state.board.size-1, value=0)
                 
-                if st.session_state.board.check_win(st.session_state.current_player):
-                    st.session_state.winner = st.session_state.current_player
+            if st.button("Place Piece"):
+                if st.session_state.board.is_valid_move(row_input, col_input):
+                    st.session_state.board.place_piece(row_input, col_input, st.session_state.current_player)
+                    
+                    if st.session_state.board.check_win(st.session_state.current_player):
+                        st.session_state.winner = st.session_state.current_player
+                    else:
+                        st.session_state.current_player = Player.BLUE if st.session_state.current_player == Player.RED else Player.RED
+                    st.rerun()
                 else:
-                    st.session_state.current_player = Player.BLUE if st.session_state.current_player == Player.RED else Player.RED
-                st.rerun()
-            else:
-                st.error("Invalid move! That hex is already taken.")
+                    st.error("Invalid move! That hex is already taken.")
 
 # 5. Draw the current state to the screen
 st.pyplot(draw_board(st.session_state.board))
