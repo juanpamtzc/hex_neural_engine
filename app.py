@@ -98,7 +98,7 @@ if 'board' not in st.session_state:
     st.session_state.winner = None
 
 # 3. Matplotlib Rendering Function
-def draw_board(board_obj):
+def draw_board(board_obj, heatmap_probs=None):
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.set_aspect('equal')
     radius = 0.5
@@ -116,6 +116,16 @@ def draw_board(board_obj):
             y = -(col + row) * (np.sqrt(3) / 2 * radius)
             
             player_at_pos = board_obj.grid[row, col]
+
+            hex_color = color_map[player_at_pos]
+            if player_at_pos == Player.EMPTY and heatmap_probs is not None:
+                prob = heatmap_probs[row, col]
+                max_prob = np.max(heatmap_probs) if np.max(heatmap_probs) > 0 else 1
+                intensity = prob / max_prob
+
+                # only add color if there's at least a 5% consideration
+                if intensity > 0.05:
+                    hex_color = plt.cm.plasma(intensity)
             
 
             hexagon = RegularPolygon(
@@ -123,7 +133,7 @@ def draw_board(board_obj):
                 numVertices=6,
                 radius=radius,
                 orientation=np.radians(30), 
-                facecolor=color_map[player_at_pos],
+                facecolor=hex_color,
                 edgecolor='black',
                 linewidth=1.5
             )
