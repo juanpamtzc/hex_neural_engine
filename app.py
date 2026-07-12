@@ -11,6 +11,17 @@ from src.engine.board import HexBoard, Player
 # AI Inference setup using ONNX
 @st.cache_resource
 def load_ai_model():
+    """loads the ONNX model for AI inference."""
+    try:
+        return ort.InferenceSession("models/production/hex_model.onnx")
+    except Exception as e:
+        st.error(f"Failed to load AI model: {e}")
+        return None
+
+# Load the AI model once at startup
+ai_session = load_ai_model()
+
+def load_model_metadata():
     """Loads runtime metadata about the current model generation."""
     try:
         with open("models/production/metadata.json", "r") as f:
@@ -23,15 +34,6 @@ def load_ai_model():
             "status": "Bootstrap Phase (Pure Exploration)",
             "architecture": "AlphaZero ResNet Dual-Head"
         }
-    
-    try:
-        return ort.InferenceSession("models/production/hex_model.onnx")
-    except Exception as e:
-        st.error(f"Failed to load AI model: {e}")
-        return None
-
-# Load the AI model once at startup
-ai_session = load_ai_model()
 
 def board_to_numpy_tensor(board, current_player):
     """Compiles the board into a (1, 3, board_size, board_size) float32 tensor suitable for ONNX inference"""
