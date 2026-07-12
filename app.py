@@ -18,7 +18,7 @@ def load_ai_model():
         return None
 
 # Load the AI model once at startup
-ai_model = load_ai_model()
+ai_session = load_ai_model()
 
 def board_to_numpy_tensor(board, current_player):
     """Compiles the board into a (1, 3, board_size, board_size) float32 tensor suitable for ONNX inference"""
