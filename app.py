@@ -151,6 +151,11 @@ with st.sidebar:
     st.header("Game Settings")
 
     game_mode = st.radio("Select Mode:", ("Human vs Human", "Human vs AI", "AI vs AI"))
+
+    st.toggle("Show AI's Strategy (Policy Heatmap)", value=False, key="show_heatmap")
+    show_heatmap = st.session_state.show_heatmap
+    
+    
     st.divider()
     st.header("Match Status")
     
@@ -203,9 +208,7 @@ with st.sidebar:
                 else:
                     st.error("Invalid move! That hex is already taken.")
 
-    st.divider()
-    st.toggle("Show AI's Strategy (Policy Heatmap)", value=False, key="show_heatmap")
-    show_heatmap = st.session_state.show_heatmap
+    
 
 # 5. Draw the current state to the screen
 heatmap_data = None
