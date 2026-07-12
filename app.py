@@ -61,6 +61,31 @@ def get_ai_move(board, player, session):
     time.sleep(0.3) # delay for UI smoothness
     return best_row, best_col
 
+def get_policy_heatmap(board, player, session):
+    """Runs the board through the AI and returns an 11x11 grid of probabilities."""
+    if session is None:
+        return None
+        
+    input_tensor = board_to_numpy_tensor(board, player)
+    ort_inputs = {session.get_inputs()[0].name: input_tensor}
+    policy_logits, _ = session.run(None, ort_inputs)
+    
+    policy = policy_logits[0]
+    
+    # Mask out illegal moves with negative infinity
+    valid_mask = (board.grid == Player.EMPTY).flatten()
+    masked_policy = np.where(valid_mask, policy, -np.inf)
+    
+    # Apply stable Softmax
+    max_logit = np.max(masked_policy)
+    if max_logit == -np.inf: # No valid moves left
+        return np.zeros((board.size, board.size))
+        
+    exp_preds = np.exp(masked_policy - max_logit)
+    probs = exp_preds / np.sum(exp_preds)
+    
+    return probs.reshape((board.size, board.size))
+
 # 1. Page Setup
 st.set_page_config(page_title="Hex-Zero Arena", layout="centered")
 st.title("⬡ Hex-Zero: Interactive Arena")
@@ -170,3 +195,4 @@ with st.sidebar:
 
 # 5. Draw the current state to the screen
 st.pyplot(draw_board(st.session_state.board))
+
