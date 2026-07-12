@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 import numpy as np
 
-# Import your newly built game engine!
 from src.engine.board import HexBoard, Player
 
 # 1. Page Setup
@@ -17,7 +16,7 @@ if 'board' not in st.session_state:
     st.session_state.current_player = Player.RED
     st.session_state.winner = None
 
-# 3. Matplotlib Rendering Function (Perfect Tessellation)
+# 3. Matplotlib Rendering Function
 def draw_board(board_obj):
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.set_aspect('equal')
@@ -37,9 +36,7 @@ def draw_board(board_obj):
             
             player_at_pos = board_obj.grid[row, col]
             
-            # 🛑 THE FIX: orientation=np.radians(30) 
-            # This rotates the polygon so the flat edges face the diagonal axes,
-            # perfectly absorbing the math from the x/y projection above.
+
             hexagon = RegularPolygon(
                 (x, y),
                 numVertices=6,
