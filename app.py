@@ -103,7 +103,7 @@ def get_policy_heatmap(board, player, session):
 
 # 1. Page Setup
 st.set_page_config(page_title="Hex-Zero Arena", layout="centered")
-st.title("⬡ Hex-Zero: Interactive Arena")
+st.title("Hex-Zero: Interactive Arena")
 st.markdown("Red connects **Top-Right to Bottom-Left**. Blue connects **Top-Left to Bottom-Right**.")
 
 # 2. Session State Initialization
