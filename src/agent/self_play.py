@@ -96,6 +96,6 @@ class SelfPlayWorker:
         print(f"Saved {len(all_states)} total positions to {filepath}")
 
 if __name__ == "__main__":
-    # A quick test run when you execute this script directly!
-    worker = SelfPlayWorker(board_size=11, num_simulations=100) # Lower sims for a quick test
-    worker.generate_batch(num_games=2)
+    # real dataset generation run
+    worker = SelfPlayWorker(board_size=11, num_simulations=400)
+    worker.generate_batch(num_games=100)
