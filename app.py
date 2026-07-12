@@ -4,13 +4,26 @@ from matplotlib.patches import RegularPolygon
 import numpy as np
 import time
 import onnxruntime as ort
+import json
 
 from src.engine.board import HexBoard, Player
 
 # AI Inference setup using ONNX
 @st.cache_resource
 def load_ai_model():
-    """loads the ONNX AI model for inference"""
+    """Loads runtime metadata about the current model generation."""
+    try:
+        with open("models/production/metadata.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        # Default fallback for the current initial bootstrap model
+        return {
+            "generation": 1,
+            "total_games": 100,
+            "status": "Bootstrap Phase (Pure Exploration)",
+            "architecture": "AlphaZero ResNet Dual-Head"
+        }
+    
     try:
         return ort.InferenceSession("models/production/hex_model.onnx")
     except Exception as e:
@@ -151,6 +164,38 @@ with st.sidebar:
     st.header("Game Settings")
 
     game_mode = st.radio("Select Mode:", ("Human vs Human", "Human vs AI", "AI vs AI"))
+
+    # Fetch latest pipeline metrics
+    meta = load_model_metadata()
+    
+    st.divider()
+    st.subheader("🧠 Model Intelligence Ledger")
+    
+    # Clean, metric grid display
+    col_g, col_s = st.columns(2)
+    with col_g:
+        st.metric(label="Model Gen", value=f"v{meta['generation']}")
+    with col_s:
+        st.metric(label="Experience Base", value=f"{meta['total_games']} games")
+        
+    st.caption(f"**Current State:** {meta['status']}")
+    
+    # Educational expander explaining the PSPACE-complete learning curve
+    with st.expander("What to expect from this AI?", expanded=False):
+        st.markdown("""
+        Hex has a massive state space ($3^{121}$ combinations). Because we are running fast "micro-generations" (100 games each) locally, the learning curve is extended:
+        
+        **Phase 1: Gen 1–25 (The Bootstrap)**
+        *High-entropy noise.* The model understands the rules but lacks tactical sight. It fills the board semi-randomly, learning basic graph topology.
+        
+        **Phase 2: Gen 26–100 (Emergence)**
+        *Basic clustering.* The network discovers that the center hexes hold higher graph centrality. It begins prioritizing the middle and executing simple 1-move blocks.
+        
+        **Phase 3: Gen 100+ (Theory & Mastery)**
+        *Virtual Connections.* The network unlocks Hex game theory natively, intentionally building unblockable **Two-Bridges** and forcing tactical bottlenecks.
+        
+        *More self-play cycles are actively rendering on the workstation GPU.*
+        """)
 
     st.toggle("Show AI's Strategy (Policy Heatmap)", value=False, key="show_heatmap")
     show_heatmap = st.session_state.show_heatmap
