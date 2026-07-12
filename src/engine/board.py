@@ -63,9 +63,9 @@ class HexBoard:
         """Returns a list of valid (on-board) neighboring coordinates."""
         # The 6 directions in a skewed Hex grid
         directions = [
-            (-1, 0), (-1, 1),  # Top-left, Top-right
-            (0, -1), (0, 1),   # Left, Right
-            (1, -1), (1, 0)    # Bottom-left, Bottom-right
+            (0, -1), (-1, 0),  # Top-left, Top-right
+            (1, 1), (-1, -1),   # Left, Right
+            (1, 0), (0, 1)    # Bottom-left, Bottom-right
         ]
         
         neighbors = []
