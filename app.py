@@ -204,11 +204,12 @@ with st.sidebar:
                     st.error("Invalid move! That hex is already taken.")
 
     st.divider()
-    show_heatmap = st.toggle("Show AI's Strategy (Policy Heatmap)", value=False)
+    st.toggle("Show AI's Strategy (Policy Heatmap)", value=False, key="show_heatmap")
+    show_heatmap = st.session_state.show_heatmap
 
 # 5. Draw the current state to the screen
 heatmap_data = None
-if show_heatmap and not st.session_state.winner:
+if st.session_state.get("show_heatmap", False) and not st.session_state.winner:
     heatmap_data = get_policy_heatmap(st.session_state.board, st.session_state.current_player, ai_session)
 
 st.pyplot(draw_board(st.session_state.board, heatmap_probs=heatmap_data))
