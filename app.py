@@ -2,8 +2,64 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 import numpy as np
+import time
+import onnxruntime as ort
 
 from src.engine.board import HexBoard, Player
+
+# AI Inference setup using ONNX
+@st.cache_resource
+def load_ai_model():
+    """loads the ONNX AI model for inference"""
+    try:
+        return ort.InferenceSession("models/production/hex_model.onnx")
+    except Exception as e:
+        st.error(f"Failed to load AI model: {e}")
+        return None
+
+# Load the AI model once at startup
+ai_model = load_ai_model()
+
+def board_to_numpy_tensor(board, current_player):
+    """Compiles the board into a (1, 3, board_size, board_size) float32 tensor suitable for ONNX inference"""
+    tensor = np.zeros((1, 3, board.size, board.size), dtype=np.float32)
+    opponent = Player.BLUE if current_player == Player.RED else Player.RED
+
+    # plane 0: current player pieces
+    tensor[0, 0][board.grid == current_player] = 1.0
+    # plane 1: opponent pieces
+    tensor[0, 1][board.grid == opponent] = 1.0
+    # plane 2: turn indicator
+    if current_player == Player.RED:
+        tensor[0, 2].fill(1.0)
+    
+    return tensor
+
+def get_ai_move(board, player, session):
+    """Passes the board state through the ONNX static graph"""
+    if session is None:
+        return None, None
+    
+    valid_moves = [(r, c) for r in range(board.size) for c in range(board.size) if board.grid[r,c] == Player.EMPTY]
+    if not valid_moves:
+        return None, None
+
+    input_tensor = board_to_numpy_tensor(board, player)
+    ort_inputs = {session.get_inputs()[0].name: input_tensor}
+    policy_logits, _ = session.run(None, ort_inputs)
+
+    policy = policy_logits[0]
+    masked_policy = np.full(board.size * board.size, -np.inf)
+
+    valid_indices = [r * board.size + c for r, c in valid_moves]
+    for idx in valid_indices:
+        masked_policy[idx] = policy[idx]
+    
+    best_action = np.argmax(masked_policy)
+    best_row, best_col = divmod(best_action, board.size)
+    
+    time.sleep(0.3) # delay for UI smoothness
+    return best_row, best_col
 
 # 1. Page Setup
 st.set_page_config(page_title="Hex-Zero Arena", layout="centered")
