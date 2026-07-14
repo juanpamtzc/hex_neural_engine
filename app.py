@@ -5,17 +5,20 @@ import numpy as np
 import time
 import onnxruntime as ort
 import json
+import os
 
 from src.engine.board import HexBoard, Player
 
 # AI Inference setup using ONNX
 @st.cache_resource
-def load_ai_model():
-    """loads the ONNX model for AI inference."""
+def load_ai_model(model_path):
+    """loads a specific ONNX model for AI inference, cached by file path"""
     try:
-        return ort.InferenceSession("models/production/hex_model.onnx")
+        if not model_path or not os.path.exists(model_path):
+            return None
+        return ort.InferenceSession(model_path)
     except Exception as e:
-        st.error(f"Failed to load AI model: {e}")
+        st.error(f"Failed to load AI model at {model_path}: {e}")
         return None
 
 # Load the AI model once at startup
