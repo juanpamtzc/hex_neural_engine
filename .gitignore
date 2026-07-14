@@ -35,3 +35,9 @@ tensorboard/
 .vscode/
 .idea/
 *.swp
+
+# PyTorch Checkpoints and Training Data
+*.pth
+*.pt
+models/checkpoints/
+training/data/
