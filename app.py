@@ -22,22 +22,28 @@ def load_ai_model(model_path):
         return None
     
 def get_available_models():
-    """Scans models directory and returns sorted dict of available models"""
+    """Scans the models directory and returns a sorted dict of available variants"""
     models = {"Random Baseline (Untrained)": None}
-
-    # add production model if it exists
+    
+    # Add production model if it exists
     if os.path.exists("models/production/hex_model.onnx"):
-        models["Latest Production"] = "models/production/hex_model.onnx"
-
-    # Scan archive folder for specific generations
+        models["Latest Production (Gen 25+)"] = "models/production/hex_model.onnx"
+        
+    # Scan archive folder for specific generations in subdirectories
     archive_dir = "models/archive"
     if os.path.exists(archive_dir):
-        # Sort files so more developed models appear above
-        for f in sorted(os.listdir(archive_dir), key=lambda x: [int(s) for s in x.split('_') if s.isdigit()] or [0], reverse=True):
-            if f.endswith(".onnx"):
-                gen_num = "".join(filter(str.isdigit, f))
-                models[f"Generation {gen_num}"] = os.path.join(archive_dir, f)
-    
+        # Find all folders like "gen_1", "gen_25"
+        gen_folders = [d for d in os.listdir(archive_dir) if os.path.isdir(os.path.join(archive_dir, d)) and d.startswith("gen_")]
+        
+        # Sort folders numerically descending so highest generation is at the top
+        gen_folders.sort(key=lambda x: int(x.split('_')[1]), reverse=True)
+        
+        for folder in gen_folders:
+            gen_num = folder.split('_')[1]
+            model_path = os.path.join(archive_dir, folder, "hex_model.onnx")
+            if os.path.exists(model_path):
+                models[f"Generation {gen_num}"] = model_path
+                
     return models
 
 def load_model_metadata():
