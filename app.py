@@ -40,9 +40,6 @@ def get_availabl_models():
     
     return models
 
-# Load the AI model once at startup
-ai_session = load_ai_model()
-
 def load_model_metadata():
     """Loads runtime metadata about the current model generation."""
     try:
