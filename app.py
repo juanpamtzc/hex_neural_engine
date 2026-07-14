@@ -21,7 +21,7 @@ def load_ai_model(model_path):
         st.error(f"Failed to load AI model at {model_path}: {e}")
         return None
     
-def get_availabl_models():
+def get_available_models():
     """Scans models directory and returns sorted dict of available models"""
     models = {"Random Baseline (Untrained)": None}
 
