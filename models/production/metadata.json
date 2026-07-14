@@ -1,0 +1,6 @@
+{
+    "generation": 25,
+    "total_games": 2500,
+    "status": "Phase 1 (The Bootstrap) - High-entropy noise",
+    "architecture": "AlphaZero ResNet Dual-Head"
+}
