@@ -20,6 +20,25 @@ def load_ai_model(model_path):
     except Exception as e:
         st.error(f"Failed to load AI model at {model_path}: {e}")
         return None
+    
+def get_availabl_models():
+    """Scans models directory and returns sorted dict of available models"""
+    models = {"Random Baseline (Untrained)": None}
+
+    # add production model if it exists
+    if os.path.exists("models/production/hex_model.onnx"):
+        models["Latest Production"] = "models/production/hex_model.onnx"
+
+    # Scan archive folder for specific generations
+    archive_dir = "models/archive"
+    if os.path.exists(archive_dir):
+        # Sort files so more developed models appear above
+        for f in sorted(os.listdir(archive_dir), key=lambda x: [int(s) for s in x.split('_') if s.isdigit()] of [0], reverse=True):
+            if f.endswith(".onnx"):
+                gen_num = "".join(filter(str.isdigit, f))
+                models[f"Generation {gen_num}"] = os.path.join(archive_dir, f)
+    
+    return models
 
 # Load the AI model once at startup
 ai_session = load_ai_model()
@@ -168,18 +187,34 @@ def draw_board(board_obj, heatmap_probs=None):
 with st.sidebar:
     st.header("Game Settings")
 
-    game_mode = st.radio("Select Mode:", ("Human vs Human", "Human vs AI", "AI vs AI"))
+    available_models = get_available_models()
+    
+    st.subheader("Match Configuration")
+
+    p1_type = st.selectbox("Player 1 (RED):", ("Human", "AI"))
+    red_model_path = None
+    if p1_type == "AI":
+        selected_red = st.selectbox("Select RED model:", list(available_models.keys()), key="red_model")
+        red_model_path = available_models[selected_red]
+    
+    st.write("---")
+
+    p2_type = st.selectbox("Player 2 (BLUE):", ("Human", "AI"))
+    blue_model_path = None
+    if p2_type == "AI":
+        selected_blue = st.selectbox("Select BLUE model:", list(available_models.keys()), key="blue_model")
+        blue_model_path = available_models[selected_blue]
 
     # Fetch latest pipeline metrics
     meta = load_model_metadata()
     
     st.divider()
-    st.subheader("🧠 Model Intelligence Ledger")
+    st.subheader("Model Intelligence Ledger")
     
     # Clean, metric grid display
     col_g, col_s = st.columns(2)
     with col_g:
-        st.metric(label="Model Gen", value=f"v{meta['generation']}")
+        st.metric(label="Latest Gen", value=f"v{meta['generation']}")
     with col_s:
         st.metric(label="Experience Base", value=f"{meta['total_games']} games")
         
@@ -220,17 +255,23 @@ with st.sidebar:
         player_color = "🔴 RED" if st.session_state.current_player == Player.RED else "🔵 BLUE"
         st.markdown(f"**Current Turn:** {player_color}")
         
-        # determine if it's AI's turn
+        # determine if current player is AI and which path to use
         is_ai_turn = False
-        if game_mode == "AI vs AI":
+        current_model_path = None
+
+        if st.session_state.current_player == Player.RED and p1_type == "AI":
             is_ai_turn = True
-        elif game_mode == "Human vs AI" and st.session_state.current_player == Player.BLUE:
+            current_model_path = red_model_path
+        elif st.session_state.current_player == Player.BLUE and p2_type == "AI":
             is_ai_turn = True
+            current_model_path = blue_model_path
 
         # for now, I'm having the AI have it's own button.
         if is_ai_turn:
             if st.button("Generate AI Move", type="primary"):
-                row, col = get_ai_move(st.session_state.board, st.session_state.current_player, ai_session)
+                active_session = load_ai_model(current_model_path)
+
+                row, col = get_ai_move(st.session_state.board, st.session_state.current_player, active_session)
                 if row is not None and col is not None:
                     st.session_state.board.place_piece(row, col, st.session_state.current_player)
                     
@@ -263,8 +304,9 @@ with st.sidebar:
 # 5. Draw the current state to the screen
 heatmap_data = None
 if st.session_state.get("show_heatmap", False) and not st.session_state.winner:
-    heatmap_data = get_policy_heatmap(st.session_state.board, st.session_state.current_player, ai_session)
+    active_path = red_model_path if st.session_state.current_player == Player.RED else blue_model_path
+    active_session = load_ai_model(active_path)
+    heatmap_data = get_policy_heatmap(st.session_state.board, st.session_state.current_player, active_session)
 
 st.pyplot(draw_board(st.session_state.board, heatmap_probs=heatmap_data))
-
 
