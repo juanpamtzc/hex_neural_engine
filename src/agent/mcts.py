@@ -55,7 +55,7 @@ class MCTS:
 
             # 2. Expansion and Evaluation
             # (If it's not a terminal state, evaluate with NN and expand)
-            value = 1.0 # Default to win for current player if terminal
+            value = -1.0 # Default to win for current player if terminal
             if not sim_board.check_win(sim_player):
                 policy_logits, value_tensor = self._evaluate_board(sim_board, sim_player)
                 value = value_tensor.item()
