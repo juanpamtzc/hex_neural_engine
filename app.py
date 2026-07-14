@@ -33,7 +33,7 @@ def get_availabl_models():
     archive_dir = "models/archive"
     if os.path.exists(archive_dir):
         # Sort files so more developed models appear above
-        for f in sorted(os.listdir(archive_dir), key=lambda x: [int(s) for s in x.split('_') if s.isdigit()] of [0], reverse=True):
+        for f in sorted(os.listdir(archive_dir), key=lambda x: [int(s) for s in x.split('_') if s.isdigit()] or [0], reverse=True):
             if f.endswith(".onnx"):
                 gen_num = "".join(filter(str.isdigit, f))
                 models[f"Generation {gen_num}"] = os.path.join(archive_dir, f)
